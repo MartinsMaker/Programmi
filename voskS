@@ -1,0 +1,48 @@
+from vosk import Model, KaldiRecognizer
+import os
+import json
+import pyaudio
+import pyttsx3
+#---------------------------------------
+if not os.path.exists("model"):
+    print ("Please download the model from https://github.com/alphacep/vosk-api/blob/master/doc/models.md and unpack as 'model' in the current folder.")
+    exit (1)
+#-----------
+model = Model("model")
+rec = KaldiRecognizer(model, 16000)
+p = pyaudio.PyAudio()
+stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=8000)
+stream.start_stream()
+#---(voice preferences)
+engine = pyttsx3.init()
+#|---Voice's Variables---|
+italianF = int(0);
+englishF = int(1);
+#|---RATE---|
+rate = engine.getProperty('rate') # getting details of current speaking rate
+engine.setProperty('rate', 125) # setting up voice rate
+#|---Volume---|
+volume = engine.getProperty('volume')# getting to know current volume level (min=0 and max=1)
+engine.setProperty('volume',1.0) # setting up volume level  between 0 and 1
+#|---Voice---|
+voices = engine.getProperty('voices') # getting details of current voice
+engine.setProperty('voice', voices[italianF].id) # setting up voice,the default variable is italianF
+#--------------------
+while True:
+    data = stream.read(4000,exception_on_overflow = False)
+    if len(data) == 0:
+        break
+    if rec.AcceptWaveform(data):
+        jres = json.loads(rec.Result())
+        if jres['text'] == "chi sei tu" or jres['text'] == "come ti chiami":
+            engine.say("io sono alfa")
+            engine.runAndWait()
+            engine.stop()
+        if jres['text'] == "nero":
+            engine.say("bianco")
+            engine.runAndWait()
+            engine.stop()
+        print(rec.Result())
+    else:
+        print(rec.PartialResult())
+print(rec.FinalResult())
